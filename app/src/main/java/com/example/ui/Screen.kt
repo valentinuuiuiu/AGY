@@ -13,6 +13,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Chat : Screen("chat", "Chat", Icons.Filled.Email)
     object Create : Screen("create", "Create", Icons.Filled.Edit)
     object Voice : Screen("voice", "Voice", Icons.Filled.Call)
+    object Live : Screen("live", "Live", Icons.Filled.Star)
     object Nexus : Screen("nexus", "Nexus", Icons.Filled.Star)
     object Profile : Screen("profile", "Profile", Icons.Filled.Person)
 }

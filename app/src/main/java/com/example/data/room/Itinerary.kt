@@ -13,5 +13,7 @@ data class Itinerary(
     val startDate: Long,
     val endDate: Long,
     val notes: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val latitude: Double? = null,
+    val longitude: Double? = null
 )

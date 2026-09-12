@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WanderAIApp() {
     val navController = rememberNavController()
-    val screens = listOf(Screen.Chat, Screen.Create, Screen.Nexus, Screen.Voice, Screen.Profile)
+    val screens = listOf(Screen.Chat, Screen.Create, Screen.Nexus, Screen.Live, Screen.Profile)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -108,6 +108,7 @@ fun WanderAIApp() {
                 composable(Screen.Chat.route) { ChatScreen() }
                 composable(Screen.Create.route) { CreateScreen() }
                 composable(Screen.Nexus.route) { NexusScreen() }
+                composable(Screen.Live.route) { GeminiLiveScreen() }
                 composable(Screen.Voice.route) { VoiceScreen() }
                 composable(Screen.Profile.route) { ProfileScreen() }
             }
