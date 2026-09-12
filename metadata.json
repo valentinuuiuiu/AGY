@@ -1,0 +1,6 @@
+{
+  "name": "WanderAI",
+  "description": "Your ultimate AI travel companion and content creator. Features voice conversations, image and video generation, and Firebase integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
