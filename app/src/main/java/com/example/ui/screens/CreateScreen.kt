@@ -1,16 +1,21 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.horizontalScroll
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
@@ -18,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun CreateScreen(viewModel: CreateViewModel = viewModel()) {
     val isLoading by viewModel.isLoading.collectAsState()
     val resultText by viewModel.resultText.collectAsState()
+    val generatedBitmap by viewModel.generatedBitmap.collectAsState()
 
     var prompt by remember { mutableStateOf("") }
     var selectedSize by remember { mutableStateOf("1K") }
@@ -34,7 +40,7 @@ fun CreateScreen(viewModel: CreateViewModel = viewModel()) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("WanderAI Content Studio", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = prompt,
@@ -42,90 +48,101 @@ fun CreateScreen(viewModel: CreateViewModel = viewModel()) {
             label = { Text("Prompt for Image/Video") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
-            shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
+            shape = RoundedCornerShape(16.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Image Controls
-        Text("Image Settings", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            sizes.forEach { size ->
-                FilterChip(
-                    selected = size == selectedSize,
-                    onClick = { selectedSize = size },
-                    label = { Text(size) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        selectedLabelColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-            }
-        }
-        
         Spacer(modifier = Modifier.height(16.dp))
-        Text("Aspect Ratio", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
+
+        Text("Select Resolution:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            aspectRatios.forEach { ar ->
+            sizes.forEach { size ->
                 FilterChip(
-                    selected = ar == selectedAspectRatio,
-                    onClick = { selectedAspectRatio = ar },
-                    label = { Text(ar) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-                        selectedLabelColor = MaterialTheme.colorScheme.primary
-                    )
+                    selected = (selectedSize == size),
+                    onClick = { selectedSize = size },
+                    label = { Text(size) }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Text("Aspect Ratio:", style = MaterialTheme.typography.titleMedium, modifier = Modifier.align(Alignment.Start))
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            aspectRatios.forEach { ratio ->
+                FilterChip(
+                    selected = (selectedAspectRatio == ratio),
+                    onClick = { selectedAspectRatio = ratio },
+                    label = { Text(ratio) }
+                )
+            }
+        }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
             Button(
                 onClick = { viewModel.generateImage(prompt, selectedSize, selectedAspectRatio) },
                 enabled = !isLoading && prompt.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Generate Image")
             }
+
             Button(
                 onClick = { viewModel.generateVideo(prompt, selectedAspectRatio) },
                 enabled = !isLoading && prompt.isNotBlank(),
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
             ) {
-                Text("Generate Video (Veo)")
+                Text("Veo 3 Video")
             }
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
 
         if (isLoading) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(24.dp))
+            CircularProgressIndicator()
         }
-        
+
         resultText?.let {
             Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // --- REAL VISUAL CANVAS RENDERING ---
+        generatedBitmap?.let { bitmap ->
+            Spacer(modifier = Modifier.height(16.dp))
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)),
-                shape = RoundedCornerShape(16.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .clip(RoundedCornerShape(16.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Text(it, modifier = Modifier.padding(16.dp))
+                Image(
+                    bitmap = bitmap.asImageBitmap(),
+                    contentDescription = "Generated Travel Asset",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
+                    contentScale = ContentScale.Fit
+                )
             }
         }
+        
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }

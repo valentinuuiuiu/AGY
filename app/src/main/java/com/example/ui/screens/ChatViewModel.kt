@@ -6,6 +6,7 @@ import com.example.network.Content
 import com.example.network.GenerateContentRequest
 import com.example.network.Part
 import com.example.network.RetrofitClient
+import com.example.services.AgyPrimeBridge
 import com.example.BuildConfig
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 data class ChatMessage(val isUser: Boolean, val text: String)
@@ -26,10 +26,7 @@ class ChatViewModel : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val conversationHistory = mutableListOf<Content>()
-
-    init {
-        // Optional system instruction can be passed in GenerateContentRequest
-    }
+    private val agyPrimeBridge = AgyPrimeBridge()
 
     fun sendMessage(userText: String) {
         if (userText.isBlank()) return
@@ -38,6 +35,31 @@ class ChatViewModel : ViewModel() {
         _messages.value = _messages.value + userMessage
         _isLoading.value = true
 
+        // --- AGY CLINCH DIRECT HOOK ---
+        // Triggered if prompt starts with "/agy", "/prime", or "/spark"
+        val trimmed = userText.trim()
+        if (trimmed.startsWith("/agy ") || trimmed.startsWith("/prime ") || trimmed.startsWith("/spark ")) {
+            val isSpark = trimmed.startsWith("/spark ")
+            val cleanCmd = trimmed.substringAfter(" ")
+            
+            viewModelScope.launch {
+                try {
+                    val result = agyPrimeBridge.executeSovereignPrompt(
+                        prompt = cleanCmd,
+                        targetNode = if (isSpark) "spark" else "prime"
+                    )
+                    val responseText = result.getOrNull() ?: ("Error: " + result.exceptionOrNull()?.message)
+                    _messages.value = _messages.value + ChatMessage(isUser = false, text = responseText)
+                } catch (e: Exception) {
+                    _messages.value = _messages.value + ChatMessage(isUser = false, text = "AGY Bridge Fault: ${e.message}")
+                } finally {
+                    _isLoading.value = false
+                }
+            }
+            return
+        }
+
+        // --- STANDARD PUBLIC GEMINI TRAVEL ASSISTANT ---
         val userContent = Content(role = "user", parts = listOf(Part(text = userText)))
         conversationHistory.add(userContent)
 
@@ -45,7 +67,7 @@ class ChatViewModel : ViewModel() {
             try {
                 val apiKey = BuildConfig.GEMINI_API_KEY
                 
-                // Add Google Maps grounding tool (search tool)
+                // Real Gemini dynamic search & maps grounding tool
                 val googleMapsTool = buildJsonObject {
                     putJsonObject("googleSearchRetrieval") {
                         putJsonObject("dynamicRetrievalConfig") {
@@ -57,7 +79,7 @@ class ChatViewModel : ViewModel() {
 
                 val request = GenerateContentRequest(
                     contents = conversationHistory.toList(),
-                    systemInstruction = Content(parts = listOf(Part(text = "You are WanderAI, an AI travel companion. You can help users discover places and plan trips."))),
+                    systemInstruction = Content(parts = listOf(Part(text = "You are WanderAI, an expert travel assistant. Provide accurate locations, culture tips, local navigation, and itineraries."))),
                     tools = listOf(googleMapsTool)
                 )
 
