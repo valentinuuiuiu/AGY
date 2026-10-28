@@ -1,0 +1,8 @@
+{
+  "firestore": [
+    {
+      "database": "ai-studio-android-wanderai-c4bfbb81-5159-497f-9f4d-ab2b9bffe1b0",
+      "rules": "firestore.rules"
+    }
+  ]
+}

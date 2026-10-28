@@ -23,12 +23,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.Screen
+import com.example.ui.auth.AuthScreen
 import com.example.ui.screens.*
 import com.example.ui.theme.MyApplicationTheme
+import com.example.util.configureAppCheck
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureAppCheck(this, intent)
         enableEdgeToEdge()
         setContent {
             MyApplicationTheme {
@@ -40,8 +46,29 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun WanderAIApp() {
+    var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser = auth.currentUser
+        }
+        Firebase.auth.addAuthStateListener(listener)
+        onDispose {
+            Firebase.auth.removeAuthStateListener(listener)
+        }
+    }
+
+    if (currentUser == null) {
+        AuthScreen(onAuthSuccess = { currentUser = Firebase.auth.currentUser })
+    } else {
+        MainAppContent()
+    }
+}
+
+@Composable
+fun MainAppContent() {
     val navController = rememberNavController()
-    val screens = listOf(Screen.Chat, Screen.Create, Screen.Nexus, Screen.Live, Screen.Profile)
+    val screens = listOf(Screen.Translate, Screen.Create, Screen.Nexus, Screen.Live, Screen.Profile)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -102,9 +129,10 @@ fun WanderAIApp() {
 
             NavHost(
                 navController = navController,
-                startDestination = Screen.Chat.route,
+                startDestination = Screen.Translate.route,
                 modifier = Modifier.padding(innerPadding)
             ) {
+                composable(Screen.Translate.route) { TranslateScreen() }
                 composable(Screen.Chat.route) { ChatScreen() }
                 composable(Screen.Create.route) { CreateScreen() }
                 composable(Screen.Nexus.route) { NexusScreen() }

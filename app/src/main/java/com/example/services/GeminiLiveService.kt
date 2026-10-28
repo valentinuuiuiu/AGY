@@ -2,7 +2,6 @@ package com.example.services
 
 import android.media.AudioAttributes
 import android.media.AudioFormat
-import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Base64
 import android.util.Log
@@ -28,21 +27,39 @@ class GeminiLiveService {
     
     private var audioTrack: AudioTrack? = null
 
-    fun connect() {
-        val apiKey = BuildConfig.GEMINI_API_KEY
+    fun connect(apiKeyOverride: String? = null) {
+        val apiKey = if (!apiKeyOverride.isNullOrBlank()) apiKeyOverride else BuildConfig.GEMINI_API_KEY
+        if (apiKey.isBlank()) {
+            _status.value = "Error: Cheia API Gemini lipsește! Configureaz-o în Dev Console."
+            return
+        }
+
         val url = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=$apiKey"
         val request = Request.Builder().url(url).build()
         
         initAudioTrack()
+        _status.value = "Connecting..."
         
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 _status.value = "Connected"
                 
-                // Send setup message
+                // Send setup message for real-time multimodal live
                 val setupMsg = JSONObject().apply {
                     put("setup", JSONObject().apply {
                         put("model", "models/gemini-2.5-flash-native-audio-preview-12-2025")
+                        put("generationConfig", JSONObject().apply {
+                            put("responseModalities", org.json.JSONArray().apply {
+                                put("AUDIO")
+                            })
+                            put("speechConfig", JSONObject().apply {
+                                put("voiceConfig", JSONObject().apply {
+                                    put("prebuiltVoiceConfig", JSONObject().apply {
+                                        put("voiceName", "Aoede")
+                                    })
+                                })
+                            })
+                        })
                     })
                 }
                 webSocket.send(setupMsg.toString())
@@ -75,7 +92,12 @@ class GeminiLiveService {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                _status.value = "Error: ${t.message}"
+                val errBody = try { response?.body?.string() } catch (e: Exception) { null }
+                val code = response?.code
+                val detail = if (code != null) " (HTTP $code)" else ""
+                val msg = "Error$detail: ${t.message ?: errBody ?: "Conexiune eșuată"}"
+                Log.e("GeminiLive", msg, t)
+                _status.value = msg
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
@@ -104,7 +126,7 @@ class GeminiLiveService {
     }
     
     fun sendVideoFrame(jpegData: ByteArray) {
-         if (webSocket == null || _status.value != "Connected") return
+        if (webSocket == null || _status.value != "Connected") return
         
         val base64Data = Base64.encodeToString(jpegData, Base64.NO_WRAP)
         

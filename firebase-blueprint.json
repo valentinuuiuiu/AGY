@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    },
+    "Itinerary": {
+      "title": "Itinerary",
+      "description": "Saved travel itinerary with GPS coordinates",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "destination": { "type": "string" },
+        "startDate": { "type": "integer" },
+        "endDate": { "type": "integer" },
+        "notes": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "destination", "userId"]
+    },
+    "SavedPhrase": {
+      "title": "SavedPhrase",
+      "description": "Saved travel phrase and translation",
+      "type": "object",
+      "properties": {
+        "originalText": { "type": "string" },
+        "translatedText": { "type": "string" },
+        "sourceLanguage": { "type": "string" },
+        "targetLanguage": { "type": "string" },
+        "phonetic": { "type": "string" },
+        "culturalNote": { "type": "string" },
+        "category": { "type": "string" },
+        "isFavorite": { "type": "boolean" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["originalText", "translatedText", "sourceLanguage", "targetLanguage", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile documents"
+    },
+    "/users/{userId}/itineraries/{itineraryId}": {
+      "schema": "Itinerary",
+      "description": "User saved itineraries collection"
+    },
+    "/users/{userId}/savedPhrases/{phraseId}": {
+      "schema": "SavedPhrase",
+      "description": "User saved phrases and translations collection"
+    }
+  }
+}

@@ -9,27 +9,36 @@ import android.media.MediaRecorder
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.config.ApiConfigManager
 import com.example.services.GeminiLiveService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
 
 class GeminiLiveViewModel(application: Application) : AndroidViewModel(application) {
+    private val configManager = ApiConfigManager.getInstance(application)
     private val geminiLiveService = GeminiLiveService()
     
     val status: StateFlow<String> = geminiLiveService.status
     val transcript: StateFlow<String> = geminiLiveService.transcript
     
+    private val _isAnalyzingFrames = MutableStateFlow(false)
+    val isAnalyzingFrames: StateFlow<Boolean> = _isAnalyzingFrames.asStateFlow()
+
+    private val _framesSentCount = MutableStateFlow(0)
+    val framesSentCount: StateFlow<Int> = _framesSentCount.asStateFlow()
+
     private var isRecording = false
     private var audioJob: Job? = null
     
     // Limits frame rate sent to Gemini Live API
     private var lastFrameTime = 0L
-    private val frameIntervalMs = 1000L // 1 FPS
+    private val frameIntervalMs = 800L // ~1.2 FPS for responsive live vision
 
     fun toggleLive() {
         if (status.value == "Connected") {
@@ -41,8 +50,10 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
 
     @SuppressLint("MissingPermission")
     private fun startLive() {
-        geminiLiveService.connect()
+        val apiKey = configManager.getSettings().geminiApiKey
+        geminiLiveService.connect(apiKey)
         isRecording = true
+        _isAnalyzingFrames.value = true
         
         audioJob = viewModelScope.launch(Dispatchers.IO) {
             val sampleRate = 16000
@@ -78,6 +89,7 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
 
     fun stopLive() {
         isRecording = false
+        _isAnalyzingFrames.value = false
         audioJob?.cancel()
         geminiLiveService.disconnect()
     }
@@ -100,8 +112,9 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
                 val bitmap = image.toBitmap()
                 val scaled = Bitmap.createScaledBitmap(bitmap, 480, 640, true)
                 val out = ByteArrayOutputStream()
-                scaled.compress(Bitmap.CompressFormat.JPEG, 50, out)
+                scaled.compress(Bitmap.CompressFormat.JPEG, 60, out)
                 geminiLiveService.sendVideoFrame(out.toByteArray())
+                _framesSentCount.value += 1
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
