@@ -1,6 +1,6 @@
 {
-  "name": "WanderAI",
-  "description": "Your ultimate AI travel companion and content creator. Features voice conversations, image and video generation, and Firebase integration.",
+  "name": "Jules AGY",
+  "description": "Advanced Agentic Gateway for real-time vision, voice, and RAG-based travel assistance.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

@@ -22,11 +22,13 @@ import java.io.ByteArrayOutputStream
 
 class GeminiLiveViewModel(application: Application) : AndroidViewModel(application) {
     private val configManager = ApiConfigManager.getInstance(application)
-    private val geminiLiveService = GeminiLiveService()
-    
+    private val geminiLiveService = GeminiLiveService(application)
+
     val status: StateFlow<String> = geminiLiveService.status
     val transcript: StateFlow<String> = geminiLiveService.transcript
-    
+    val lastToolAction: StateFlow<String?> = geminiLiveService.lastToolAction
+    val audioAmplitude: StateFlow<Float> = geminiLiveService.audioAmplitude
+
     private val _isAnalyzingFrames = MutableStateFlow(false)
     val isAnalyzingFrames: StateFlow<Boolean> = _isAnalyzingFrames.asStateFlow()
 
@@ -35,10 +37,10 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
 
     private var isRecording = false
     private var audioJob: Job? = null
-    
-    // Limits frame rate sent to Gemini Live API
+
+    // Frame rate throttle: ~1.5 FPS for live vision streaming
     private var lastFrameTime = 0L
-    private val frameIntervalMs = 800L // ~1.2 FPS for responsive live vision
+    private val frameIntervalMs = 700L
 
     fun toggleLive() {
         if (status.value == "Connected") {
@@ -54,7 +56,7 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
         geminiLiveService.connect(apiKey)
         isRecording = true
         _isAnalyzingFrames.value = true
-        
+
         audioJob = viewModelScope.launch(Dispatchers.IO) {
             val sampleRate = 16000
             val bufferSize = AudioRecord.getMinBufferSize(
@@ -62,7 +64,7 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             )
-            
+
             val audioRecord = AudioRecord(
                 MediaRecorder.AudioSource.MIC,
                 sampleRate,
@@ -70,20 +72,28 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize
             )
-            
-            audioRecord.startRecording()
-            val buffer = ByteArray(bufferSize)
-            
-            while (isActive && isRecording) {
-                val read = audioRecord.read(buffer, 0, bufferSize)
-                if (read > 0) {
-                    val pcmData = buffer.copyOf(read)
-                    geminiLiveService.sendAudioChunk(pcmData)
+
+            try {
+                audioRecord.startRecording()
+                val buffer = ByteArray(bufferSize)
+
+                while (isActive && isRecording) {
+                    val read = audioRecord.read(buffer, 0, bufferSize)
+                    if (read > 0) {
+                        val pcmData = buffer.copyOf(read)
+                        geminiLiveService.sendAudioChunk(pcmData)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                try {
+                    audioRecord.stop()
+                    audioRecord.release()
+                } catch (e: Exception) {
+                    // Ignore release errors
                 }
             }
-            
-            audioRecord.stop()
-            audioRecord.release()
         }
     }
 
@@ -93,27 +103,42 @@ class GeminiLiveViewModel(application: Application) : AndroidViewModel(applicati
         audioJob?.cancel()
         geminiLiveService.disconnect()
     }
-    
+
     fun processImageProxy(image: ImageProxy) {
         if (status.value != "Connected") {
             image.close()
             return
         }
-        
+
         val currentTime = System.currentTimeMillis()
         if (currentTime - lastFrameTime < frameIntervalMs) {
             image.close()
             return
         }
         lastFrameTime = currentTime
-        
+
         viewModelScope.launch(Dispatchers.Default) {
             try {
                 val bitmap = image.toBitmap()
-                val scaled = Bitmap.createScaledBitmap(bitmap, 480, 640, true)
-                val out = ByteArrayOutputStream()
-                scaled.compress(Bitmap.CompressFormat.JPEG, 60, out)
-                geminiLiveService.sendVideoFrame(out.toByteArray())
+                // Scale bitmap for real-time live vision optimization (max 640px)
+                val maxDim = 640
+                val scale = if (bitmap.width > maxDim || bitmap.height > maxDim) {
+                    val factor = maxDim.toFloat() / kotlin.math.max(bitmap.width, bitmap.height)
+                    Bitmap.createScaledBitmap(
+                        bitmap,
+                        (bitmap.width * factor).toInt(),
+                        (bitmap.height * factor).toInt(),
+                        true
+                    )
+                } else {
+                    bitmap
+                }
+
+                val stream = ByteArrayOutputStream()
+                scale.compress(Bitmap.CompressFormat.JPEG, 65, stream)
+                val byteArray = stream.toByteArray()
+
+                geminiLiveService.sendVideoFrame(byteArray)
                 _framesSentCount.value += 1
             } catch (e: Exception) {
                 e.printStackTrace()

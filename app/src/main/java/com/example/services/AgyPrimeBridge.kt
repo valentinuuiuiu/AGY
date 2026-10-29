@@ -29,7 +29,7 @@ class AgyPrimeBridge(private val context: Context? = null) {
             try {
                 // Dynamically resolved from runtime settings or local environment (never hardcoded)
                 val config = context?.let { ApiConfigManager.getInstance(it).getSettings() }
-                val targetBase = config?.remoteHost ?: "http://127.0.0.1:20128"
+                val targetBase = config?.baseUrl ?: "http://127.0.0.1:20128"
                 val url = "$targetBase/v1/chat/completions"
                 val model = if (targetNode == "spark") "spark-x2.5-4b" else "free-many"
 
@@ -46,8 +46,15 @@ class AgyPrimeBridge(private val context: Context? = null) {
 
                 val body = jsonPayload.toString().toRequestBody("application/json".toMediaType())
                 val builder = Request.Builder().url(url).post(body)
-                config?.apiKey?.let {
-                    if (it.isNotBlank()) builder.addHeader("Authorization", "Bearer $it")
+
+                val currentApiKey = when (config?.provider) {
+                    "openai" -> config.openaiApiKey
+                    "gemini" -> config.geminiApiKey
+                    else -> ""
+                }
+
+                if (currentApiKey.isNotBlank()) {
+                    builder.addHeader("Authorization", "Bearer $currentApiKey")
                 }
 
                 val response = client.newCall(builder.build()).execute()

@@ -31,6 +31,7 @@ import com.example.ui.auth.signOutUser
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.flow.collectLatest
+import com.example.ui.dev.DevConsoleDialog
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -50,6 +51,11 @@ fun ProfileScreen(viewModel: ItineraryViewModel = viewModel()) {
 
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Notițe & Transcrieri, 1 = Itinerarii
     var showAddDialog by remember { mutableStateOf(false) }
+    var showDevConsole by remember { mutableStateOf(false) }
+
+    if (showDevConsole) {
+        DevConsoleDialog(onDismiss = { showDevConsole = false })
+    }
 
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collectLatest { message ->
@@ -146,17 +152,30 @@ fun ProfileScreen(viewModel: ItineraryViewModel = viewModel()) {
                         }
                     }
 
-                    IconButton(
-                        onClick = {
-                            signOutUser(context, onSignOutComplete = {}, scope = coroutineScope)
-                        },
-                        modifier = Modifier.testTag("sign_out_button")
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ExitToApp,
-                            contentDescription = "Deconectare",
-                            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = { showDevConsole = true },
+                            modifier = Modifier.testTag("dev_console_button")
+                        ) {
+                            Icon(
+                                Icons.Default.Terminal,
+                                contentDescription = "Developer Console",
+                                tint = Color(0xFF06B6D4)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                signOutUser(context, onSignOutComplete = {}, scope = coroutineScope)
+                            },
+                            modifier = Modifier.testTag("sign_out_button")
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ExitToApp,
+                                contentDescription = "Deconectare",
+                                tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             }

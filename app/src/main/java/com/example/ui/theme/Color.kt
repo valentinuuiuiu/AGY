@@ -1,15 +1,36 @@
 package com.example.ui.theme
 
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-val ImmersiveBackground = Color(0xFF0B0B0C)
-val ImmersiveSurface = Color(0xFF121214)
-val ImmersiveSurfaceVariant = Color(0xFF1E293B)
-val ImmersivePrimary = Color(0xFF6366F1) // Indigo 500
-val ImmersiveOnPrimary = Color(0xFFFFFFFF)
-val ImmersiveSecondary = Color(0xFF818CF8) // Indigo 400
-val ImmersiveTertiary = Color(0xFF10B981) // Emerald 500
-val ImmersiveTextPrimary = Color(0xFFF8FAFC)
-val ImmersiveTextSecondary = Color(0xFF94A3B8)
-val ImmersiveOutline = Color(0xFF334155)
+// Cyberpunk & Futuristic Glassmorphism Palette
+val CyberBackground = Color(0xFF07090E)
+val CyberSurface = Color(0xFF0D121F)
+val CyberCard = Color(0xFF131B2E)
+val CyberCardElevated = Color(0xFF19243C)
+val CyberBorder = Color(0xFF1E293B)
 
+val NeonCyan = Color(0xFF00F5D4)
+val NeonPurple = Color(0xFF7928CA)
+val NeonPink = Color(0xFFFF007F)
+val ElectricBlue = Color(0xFF0070F3)
+val CyberAmber = Color(0xFFFFB703)
+val CyberEmerald = Color(0xFF10B981)
+val CyberRose = Color(0xFFF43F5E)
+
+val CyberTextPrimary = Color(0xFFF8FAFC)
+val CyberTextSecondary = Color(0xFF94A3B8)
+val CyberTextMuted = Color(0xFF64748B)
+
+// Gradients
+val CyberNeonGradient = Brush.horizontalGradient(
+    listOf(NeonCyan, ElectricBlue, NeonPurple)
+)
+
+val CyberCardBorderGradient = Brush.linearGradient(
+    listOf(NeonCyan.copy(alpha = 0.5f), NeonPurple.copy(alpha = 0.3f), Color.Transparent)
+)
+
+val JarvisHoloGradient = Brush.radialGradient(
+    listOf(NeonCyan.copy(alpha = 0.25f), Color.Transparent)
+)

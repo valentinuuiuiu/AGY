@@ -3,29 +3,33 @@ package com.example.ui.screens
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.services.AgenticToolsService
 import com.example.services.AppControlService
 import com.example.services.AppMcpTool
-import com.example.services.NotebookLMService
-import com.example.services.ssh.SshService
+import com.example.services.ToolExecutionLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class NexusViewModel(application: Application) : AndroidViewModel(application) {
 
     private val appControlService = AppControlService(application)
-    private val notebookLMService = NotebookLMService()
-    private val sshService = SshService()
+    private val agenticTools = AgenticToolsService.getInstance(application)
+
+    val executionLogs: StateFlow<List<ToolExecutionLog>> = agenticTools.executionLogs
 
     private val _mcpTools = MutableStateFlow<List<AppMcpTool>>(emptyList())
     val mcpTools: StateFlow<List<AppMcpTool>> = _mcpTools.asStateFlow()
 
-    private val _ragStatus = MutableStateFlow("Disconnected")
-    val ragStatus: StateFlow<String> = _ragStatus.asStateFlow()
+    private val _telemetryStatus = MutableStateFlow<String?>(null)
+    val telemetryStatus: StateFlow<String?> = _telemetryStatus.asStateFlow()
 
-    private val _sshOutput = MutableStateFlow("Terminal Standby")
-    val sshOutput: StateFlow<String> = _sshOutput.asStateFlow()
+    init {
+        scanApps()
+        runTelemetryCheck()
+    }
 
     fun scanApps() {
         viewModelScope.launch {
@@ -38,27 +42,35 @@ class NexusViewModel(application: Application) : AndroidViewModel(application) {
         appControlService.launchAppByPackage(packageName)
     }
 
-    fun queryBrain(prompt: String) {
+    fun runTelemetryCheck() {
         viewModelScope.launch {
-            _ragStatus.value = "Querying RAG Brain..."
-            val result = notebookLMService.askBrain(prompt)
-            if (result.isSuccess) {
-                _ragStatus.value = "Success: ${result.getOrNull()?.answer}"
-            } else {
-                _ragStatus.value = "Error: Connection refused (MCP Hub offline)"
-            }
+            val result = agenticTools.executeTool("get_device_telemetry", JSONObject())
+            _telemetryStatus.value = result.optString("message", "Telemetry OK")
         }
     }
 
-    fun executeRemoteCommand(command: String, password: String) {
+    fun searchPlaces(query: String, navigate: Boolean = false) {
         viewModelScope.launch {
-            _sshOutput.value = "Executing '$command' on aryan@100.91.238.121..."
-            val result = sshService.executeCommand(command, password)
-            if (result.isSuccess) {
-                _sshOutput.value = result.getOrNull() ?: "Success"
-            } else {
-                _sshOutput.value = result.exceptionOrNull()?.message ?: "Unknown Error"
+            val args = JSONObject().apply {
+                put("query", query)
+                put("navigate", navigate)
             }
+            agenticTools.executeTool("search_places_and_navigate", args)
         }
+    }
+
+    fun testSaveMemory(title: String, content: String, category: String = "Recommendation") {
+        viewModelScope.launch {
+            val args = JSONObject().apply {
+                put("title", title)
+                put("content", content)
+                put("category", category)
+            }
+            agenticTools.executeTool("save_to_memory", args)
+        }
+    }
+
+    fun clearLogs() {
+        agenticTools.clearLogs()
     }
 }
