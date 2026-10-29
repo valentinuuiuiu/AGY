@@ -39,7 +39,7 @@ fun CreateScreen(viewModel: CreateViewModel = viewModel()) {
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("WanderAI Content Studio", style = MaterialTheme.typography.headlineMedium)
+        Text("Jules Creative Studio", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(

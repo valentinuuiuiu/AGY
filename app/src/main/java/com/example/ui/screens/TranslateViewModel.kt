@@ -210,12 +210,13 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val apiKey = BuildConfig.GEMINI_API_KEY
                 val systemPrompt = """
-                    You are a world-class travel translation and communication engine.
+                    You are Jules, a high-intelligence agentic travel companion.
                     Translate the following traveler text from ${sourceLang.nameRo} (${sourceLang.code}) into ${destLang.nameRo} (${destLang.code}).
                     Return a strictly valid JSON object with:
                     - "translation": The natural, polite and culturally accurate translation in ${destLang.nameRo}.
                     - "phonetic": A phonetic reading guide (e.g., Romaji, Pinyin, or easy Latin phonetic pronunciation).
                     - "culturalTip": A concise travel or etiquette tip for this phrase (e.g. when to use it, gestures, polite form).
+                    Act as an agent, not just a translator. Provide context if necessary.
                     Do not include markdown or extra text. Only JSON.
                 """.trimIndent()
 
@@ -226,7 +227,7 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
                     systemInstruction = Content(parts = listOf(Part(text = systemPrompt)))
                 )
 
-                val response = RetrofitClient.service.generateContent("gemini-3.8-flash", apiKey, request)
+                val response = RetrofitClient.service.generateContent("gemini-2.0-flash-exp", apiKey, request)
                 val rawJson = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: ""
                 
                 var cleanJson = rawJson.trim()
@@ -306,7 +307,7 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 val apiKey = BuildConfig.GEMINI_API_KEY
                 val prompt = """
-                    You are WanderAI Travel Lens. Analyze this travel photo (which may be a restaurant menu, food item, street sign, metro map, or notice).
+                    You are Jules, the Agentic Travel Lens. Analyze this travel photo (which may be a restaurant menu, food item, street sign, metro map, or notice).
                     Translate all important text into Romanian (${_primaryLang.value.nameRo}).
                     Return a JSON object with:
                     - "detectedLanguage": Name of the language found on the sign/menu.
@@ -314,6 +315,7 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
                     - "translatedText": Clear Romanian translation.
                     - "foodDescription": If this is a menu or food, explain what the dish is, key ingredients, allergens (gluten, dairy, nuts) and dietary info (vegetarian/halal). If it's a sign, explain what it means.
                     - "culturalTip": A travel tip about ordering, customs, or navigating this location.
+                    Act as an agent, providing deep insights beyond just text.
                     Only return raw valid JSON.
                 """.trimIndent()
 
@@ -328,7 +330,7 @@ class TranslateViewModel(application: Application) : AndroidViewModel(applicatio
                     )
                 )
 
-                val response = RetrofitClient.service.generateContent("gemini-3.8-flash", apiKey, request)
+                val response = RetrofitClient.service.generateContent("gemini-2.0-flash-exp", apiKey, request)
                 val raw = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: ""
                 var clean = raw.trim()
                 if (clean.startsWith("```json")) clean = clean.removePrefix("```json").trim()

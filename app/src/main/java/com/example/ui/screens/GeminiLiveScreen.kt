@@ -224,7 +224,7 @@ fun LiveCameraContent(viewModel: GeminiLiveViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF06B6D4), modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Gemini Live:", color = Color(0xFF06B6D4), fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                            Text("Jules Agent:", color = Color(0xFF06B6D4), fontSize = 12.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(

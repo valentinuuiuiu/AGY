@@ -47,7 +47,14 @@ class GeminiLiveService {
                 // Send setup message for real-time multimodal live
                 val setupMsg = JSONObject().apply {
                     put("setup", JSONObject().apply {
-                        put("model", "models/gemini-2.5-flash-native-audio-preview-12-2025")
+                        put("model", "models/gemini-2.0-flash-exp")
+                        put("systemInstruction", JSONObject().apply {
+                            put("parts", org.json.JSONArray().apply {
+                                put(JSONObject().apply {
+                                    put("text", "You are Jules, a proactive, high-intelligence travel agent. You have vision capabilities. Help the user in real-time by observing their surroundings and providing context-aware advice, translations, and safety tips. Be concise and proactive.")
+                                })
+                            })
+                        })
                         put("generationConfig", JSONObject().apply {
                             put("responseModalities", org.json.JSONArray().apply {
                                 put("AUDIO")
@@ -55,7 +62,7 @@ class GeminiLiveService {
                             put("speechConfig", JSONObject().apply {
                                 put("voiceConfig", JSONObject().apply {
                                     put("prebuiltVoiceConfig", JSONObject().apply {
-                                        put("voiceName", "Aoede")
+                                        put("voiceName", "Puck")
                                     })
                                 })
                             })
