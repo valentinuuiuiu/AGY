@@ -1,6 +1,0 @@
-{
-  "name": "Jules AGY",
-  "description": "Advanced Agentic Gateway for real-time vision, voice, and RAG-based travel assistance.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
